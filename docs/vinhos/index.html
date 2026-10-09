@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Classificador de Vinhos</title>
+<meta name="description" content="Classificação da qualidade de vinhos tintos com Machine Learning: Regressão Logística, Árvore de Decisão, Random Forest e SVM. Tech Challenge Fase 2 da Pós-Tech FIAP.">
+<meta name="author" content="Danna Bigois">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23A5114E'/%3E%3Crect x='7' y='17' width='4' height='8' fill='white'/%3E%3Crect x='14' y='11' width='4' height='14' fill='white'/%3E%3Crect x='21' y='7' width='4' height='18' fill='white'/%3E%3C/svg%3E">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Qual vinho é excelente? 4 modelos, 1 escolha">
+<meta property="og:description" content="Classificação da qualidade de vinhos tintos com Machine Learning: Regressão Logística, Árvore de Decisão, Random Forest e SVM. Tech Challenge Fase 2 da Pós-Tech FIAP.">
+<meta property="og:url" content="https://danses9.github.io/pos_tech_FIAP/vinhos/">
+<meta property="og:image" content="https://danses9.github.io/pos_tech_FIAP/vinhos/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: estudo de caso curto em coluna única; a faixa do pipeline é o elemento central. Cores herdadas da paleta dos gráficos do notebook. */
+:root {
+  --bg: #FAF8F9;
+  --surface: #FFFFFF;
+  --ink: #1B1519;
+  --ink-2: #4D4549;
+  --muted: #7A7176;
+  --line: #E6E0E3;
+  --wine: #A5114E;
+  --wine-soft: #F6E3EB;
+  --plum: #5C2F7C;
+  --plum-soft: #ECE4F3;
+  --slate: #667985;
+  --slate-2: #A9B3B9;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141013; --surface: #1D171B; --ink: #F2ECEF; --ink-2: #CBC1C6; --muted: #978C92; --line: #342B30;
+    --wine: #EC5B8F; --wine-soft: #3A1726; --plum: #B392D6; --plum-soft: #2B2136; --slate: #93A4AE; --slate-2: #5D6A72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141013; --surface: #1D171B; --ink: #F2ECEF; --ink-2: #CBC1C6; --muted: #978C92; --line: #342B30;
+  --wine: #EC5B8F; --wine-soft: #3A1726; --plum: #B392D6; --plum-soft: #2B2136; --slate: #93A4AE; --slate-2: #5D6A72;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 18px; line-height: 1.6;
+  padding-inline: 20px; padding-block: 0 56px;
+}
+.wrap { max-width: 920px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; line-height: 1.15; }
+h3 { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
+p { margin: 0; }
+a { color: var(--wine); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--wine); outline-offset: 3px; border-radius: 2px; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--wine); font-weight: 600;
+}
+section { padding-block: 56px 0; display: grid; gap: 24px; }
+.sec-head { display: grid; gap: 10px; }
+.lede { color: var(--ink-2); font-size: 1.08rem; max-width: 60ch; }
+
+/* Hero */
+.hero { padding-block: 28px 0; display: grid; gap: 24px; }
+.hero h1 { font-size: clamp(2.3rem, 6.5vw, 4.2rem); font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.hero h1 em { font-style: normal; color: var(--wine); }
+.stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line);
+}
+.stat { padding: 16px 12px 16px 0; display: grid; gap: 2px; }
+.stat b { font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.stat span { color: var(--muted); font-size: 0.88rem; line-height: 1.3; }
+
+/* Pipeline */
+.pipeline-band { overflow-x: auto; margin-inline: -20px; padding-inline: 20px; padding-bottom: 6px; }
+.pipeline {
+  display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr));
+  min-width: 720px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden;
+}
+.layer { padding: 18px 16px; display: grid; gap: 8px; align-content: start; position: relative; border-right: 1px solid var(--line); }
+.layer:last-child { border-right: 0; }
+.layer::after {
+  content: ""; position: absolute; right: -7px; top: 26px; width: 12px; height: 12px;
+  background: var(--surface); border-top: 1px solid var(--line); border-right: 1px solid var(--line);
+  transform: rotate(45deg); z-index: 1;
+}
+.layer:last-child::after { display: none; }
+.layer h3 { font-size: 1.25rem; }
+.layer p { font-size: 0.92rem; color: var(--ink-2); line-height: 1.4; }
+.layer.curated { background: var(--plum-soft); }
+.serving { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-2); }
+.serving .node { border: 1px solid var(--line); background: var(--surface); padding: 5px 9px; border-radius: 6px; }
+.serving .arrow { color: var(--muted); }
+
+/* Achados */
+.findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 20px; display: grid; gap: 12px; align-content: start; min-width: 0;
+}
+.card .num { font-family: var(--font-display); font-weight: 800; font-size: 2.4rem; line-height: 1; color: var(--wine); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.card p { font-size: 0.95rem; color: var(--ink-2); line-height: 1.5; }
+.bars { display: grid; gap: 7px; }
+.bar { display: grid; grid-template-columns: 7rem 1fr 3.2rem; align-items: center; gap: 10px; font-size: 0.85rem; }
+.bar .lbl { color: var(--ink-2); line-height: 1.2; }
+.bar .track { display: block; height: 10px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar .fill { display: block; height: 100%; background: var(--wine); border-radius: 2px; }
+.bar .fill.slate { background: var(--slate); }
+.bar .val { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink); }
+svg text { font-family: var(--font-mono); }
+.chart-svg { width: 100%; height: auto; display: block; }
+
+/* Aprendizados */
+.learn { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 36px; }
+.learn li { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.learn li p { color: var(--ink-2); font-size: 0.96rem; line-height: 1.45; }
+.stack { display: flex; flex-wrap: wrap; gap: 8px; }
+.stack span { font-family: var(--font-mono); font-size: 0.78rem; border: 1px solid var(--line); background: var(--surface); padding: 5px 10px; border-radius: 999px; color: var(--ink-2); }
+
+.lang { display: flex; justify-content: flex-end; gap: 8px; padding-top: 20px; }
+.lang button {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 8px;
+}
+.lang button:hover { border-color: var(--muted); }
+.lang button[aria-pressed="true"] { color: var(--wine); background: var(--wine-soft); border-color: var(--wine); }
+.lang button:focus-visible { outline: 2px solid var(--wine); outline-offset: 2px; }
+.lang svg { width: 20px; height: 14px; border-radius: 2px; display: block; box-shadow: 0 0 0 1px var(--line); }
+
+footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.88rem; display: grid; gap: 6px; }
+
+@media (max-width: 560px) {
+  body { font-size: 17px; padding-inline: 16px; }
+  .pipeline-band { margin-inline: -16px; padding-inline: 16px; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .stat b { font-size: 1.9rem; }
+  .bar { grid-template-columns: 6rem 1fr 3rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fill { transform-origin: left; animation: grow 900ms cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes grow { from { transform: scaleX(0.15); } to { transform: scaleX(1); } }
+}
+</style>
+<style>
+.steps .layer p { font-size: 0.9rem; }
+.table-wrap { overflow-x: auto; }
+table.models { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 520px; }
+table.models th, table.models td { padding: 10px 8px; text-align: right; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+table.models th:first-child, table.models td:first-child { text-align: left; }
+table.models th { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+table.models td { font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink-2); }
+table.models td:first-child { font-family: var(--font-body); font-size: 0.95rem; color: var(--ink); }
+table.models tr.best td { color: var(--wine); font-weight: 600; background: var(--wine-soft); }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.split div { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.split b { font-family: var(--font-display); font-size: 1.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.split span { font-size: 0.82rem; color: var(--ink-2); line-height: 1.35; }
+.split .hl { border-color: var(--wine); }
+.split .hl b { color: var(--wine); }
+</style>
+<style>body { margin: 0; } [hidden] { display: none !important; }</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="lang" aria-label="Idioma / Language">
+    <button type="button" id="lang-pt" data-lang="pt-BR" aria-pressed="true" title="Ler em português">
+      <svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><polygon points="10,1.6 18.4,7 10,12.4 1.6,7" fill="#FFDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8,6.3 Q10,5.3 13.2,7.5" stroke="#FFFFFF" stroke-width="0.7" fill="none"/></svg>
+      PT-BR
+    </button>
+    <button type="button" id="lang-en" data-lang="en" aria-pressed="false" title="Read in English">
+      <svg viewBox="0 0 19 10" preserveAspectRatio="none" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><g fill="#FFFFFF"><rect y="0.769" width="19" height="0.769"/><rect y="2.308" width="19" height="0.769"/><rect y="3.846" width="19" height="0.769"/><rect y="5.385" width="19" height="0.769"/><rect y="6.923" width="19" height="0.769"/><rect y="8.462" width="19" height="0.769"/></g><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg>
+      EN
+    </button>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow" data-i18n="hero_eyebrow">Pós-Tech FIAP · Tech Challenge Fase 2 · Machine Learning</div>
+    <h1 data-i18n="hero_h1">Qual vinho é <em>excelente</em>? 4 modelos, 1 escolha.</h1>
+    <p class="lede" data-i18n="hero_lede">Treinei e comparei quatro modelos de classificação para prever, a partir das características químicas, se um vinho tinto é de alta qualidade (nota 7 ou mais).</p>
+    <div class="stats">
+      <div class="stat"><b data-i18n="s1_n">1.143</b><span data-i18n="s1">vinhos<br>tintos</span></div>
+      <div class="stat"><b>14%</b><span data-i18n="s2">são de alta<br>qualidade</span></div>
+      <div class="stat"><b>7</b><span data-i18n="s3">variáveis novas<br>criadas</span></div>
+      <div class="stat"><b>4</b><span data-i18n="s4">modelos<br>comparados</span></div>
+    </div>
+  </header>
+
+  <section id="metodo">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="m_eyebrow">Como foi feito</div>
+      <h2 data-i18n="m_h2">Da análise exploratória ao modelo escolhido</h2>
+      <p class="lede" data-i18n="m_lede">Cada modelo roda num Pipeline do scikit-learn, com a mesma divisão de dados, para a comparação ser justa.</p>
+    </div>
+    <div class="pipeline-band">
+      <div class="pipeline steps" role="list" aria-label="Etapas">
+        <div class="layer" role="listitem"><h3 data-i18n="st1">Explorar</h3><p data-i18n="st1p">Distribuições, correlações, outliers e o desbalanceamento das classes.</p></div>
+        <div class="layer" role="listitem"><h3 data-i18n="st2">Criar variáveis</h3><p data-i18n="st2p">Razões e interações, como álcool/densidade e sulfatos/cloretos.</p></div>
+        <div class="layer" role="listitem"><h3 data-i18n="st3">Dividir</h3><p data-i18n="st3p">Treino e teste 80/20 estratificado, mantendo os 14% de vinhos bons nos dois.</p></div>
+        <div class="layer curated" role="listitem"><h3 data-i18n="st4">Comparar</h3><p data-i18n="st4p">Regressão Logística, Árvore, Random Forest e SVM, com pesos balanceados.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="achados">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="f_eyebrow">O que os dados mostraram</div>
+      <h2 data-i18n="f_h2">Resultados no conjunto de teste</h2>
+    </div>
+    <div class="table-wrap">
+      <table class="models">
+        <thead><tr><th data-i18n="t_model">Modelo</th><th data-i18n="t_acc">Acurácia</th><th>Precision</th><th>Recall</th><th>F1</th><th>ROC-AUC</th></tr></thead>
+        <tbody>
+          <tr><td data-i18n="m1">Regressão Logística</td><td data-i18n="r1a">78,6%</td><td data-i18n="r1b">35,6%</td><td data-i18n="r1c">65,6%</td><td data-i18n="r1d">46,2%</td><td data-i18n="r1e">87,0%</td></tr>
+          <tr><td data-i18n="m2">Árvore de Decisão</td><td data-i18n="r2a">79,9%</td><td data-i18n="r2b">39,4%</td><td data-i18n="r2c">81,3%</td><td data-i18n="r2d">53,1%</td><td data-i18n="r2e">82,4%</td></tr>
+          <tr class="best"><td>Random Forest</td><td data-i18n="r3a">91,7%</td><td data-i18n="r3b">76,0%</td><td data-i18n="r3c">59,4%</td><td data-i18n="r3d">66,7%</td><td data-i18n="r3e">90,4%</td></tr>
+          <tr><td data-i18n="m4">SVM (RBF)</td><td data-i18n="r4a">81,7%</td><td data-i18n="r4b">40,7%</td><td data-i18n="r4c">68,8%</td><td data-i18n="r4d">51,2%</td><td data-i18n="r4e">86,6%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="findings">
+
+      <article class="card">
+        <h3 data-i18n="c1_h3">Acurácia sozinha engana</h3>
+        <div class="num">86%</div>
+        <p data-i18n="c1_p">Um modelo que dissesse sempre "não é excelente" acertaria 86% das vezes sem aprender nada. Por isso a escolha olhou precision, recall e F1 da classe Alta.</p>
+      </article>
+
+      <article class="card">
+        <h3 data-i18n="c2_h3">Encontrar mais ou errar menos</h3>
+        <div class="split">
+          <div><b data-i18n="c2_a">26 de 32</b><span data-i18n="c2_as">vinhos bons achados pela Árvore, com 40 alarmes falsos</span></div>
+          <div class="hl"><b data-i18n="c2_b">19 de 32</b><span data-i18n="c2_bs">achados pelo Random Forest, com só 6 alarmes falsos</span></div>
+        </div>
+        <p data-i18n="c2_p">A Árvore encontra mais vinhos bons, mas erra muito. O Random Forest é mais seletivo: quando diz "excelente", acerta 76% das vezes.</p>
+      </article>
+
+      <article class="card">
+        <h3 data-i18n="c3_h3">Random Forest foi o escolhido</h3>
+        <div class="num" data-i18n="c3_num">90,4%</div>
+        <p data-i18n="c3_p">de ROC-AUC, com a melhor acurácia, precision e F1 entre os quatro. É o modelo mais equilibrado para indicar vinhos de alta qualidade com confiança.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="aprendizados">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="l_eyebrow">O que eu levo deste módulo</div>
+      <h2 data-i18n="l_h2">Meus aprendizados</h2>
+    </div>
+    <ul class="learn">
+      <li><h3 data-i18n="a1">Base desbalanceada pede outras métricas</h3><p data-i18n="a1p">Precision, recall, F1 e ROC-AUC dizem mais que a acurácia quando a classe de interesse é rara.</p></li>
+      <li><h3 data-i18n="a2">Sem vazamento de informação</h3><p data-i18n="a2p">A nota original saiu das variáveis de entrada, porque foi ela que gerou o alvo.</p></li>
+      <li><h3 data-i18n="a3">Feature engineering faz diferença</h3><p data-i18n="a3p">Razões e interações entre variáveis químicas melhoraram a precisão dos modelos.</p></li>
+      <li><h3 data-i18n="a4">Reprodutibilidade</h3><p data-i18n="a4p">Pipelines, divisão estratificada e random_state fixo garantem que o resultado se repete.</p></li>
+    </ul>
+    <div class="stack" aria-label="Tecnologias">
+      <span>Python</span><span>scikit-learn</span><span>pandas</span><span>NumPy</span><span>matplotlib</span><span>seaborn</span><span>JupyterLab</span>
+    </div>
+  </section>
+
+  <footer>
+    <p data-i18n="foot1">Dados: Wine Quality Dataset (Kaggle), 1.143 vinhos tintos. Projeto em grupo na Pós-Tech FIAP.</p>
+    <p><span data-i18n="foot2">Código:</span> <a href="https://github.com/Danses9/pos_tech_FIAP/tree/main/Tech%20Challenge/Fase%202%20-%20Classificacao%20de%20Vinhos" target="_blank" rel="noopener">github.com/Danses9/pos_tech_FIAP</a> · <a href="../" data-i18n="foot3">Outros projetos</a></p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var EN = {
+    "hero_eyebrow": "FIAP Pós-Tech · Tech Challenge Phase 2 · Machine Learning",
+    "hero_h1": "Which wine is <em>excellent</em>? 4 models, 1 choice.",
+    "hero_lede": "I trained and compared four classification models to predict, from chemical properties, whether a red wine is high quality (score 7 or above).",
+    "s1_n": "1,143",
+    "s1": "red<br>wines",
+    "s2": "are high<br>quality",
+    "s3": "new features<br>created",
+    "s4": "models<br>compared",
+    "m_eyebrow": "How it was built",
+    "m_h2": "From exploratory analysis to the chosen model",
+    "m_lede": "Each model runs in a scikit-learn Pipeline on the same data split, so the comparison is fair.",
+    "st1": "Explore",
+    "st1p": "Distributions, correlations, outliers and class imbalance.",
+    "st2": "Create features",
+    "st2p": "Ratios and interactions, such as alcohol/density and sulphates/chlorides.",
+    "st3": "Split",
+    "st3p": "Stratified 80/20 train/test split, keeping the 14% of good wines in both.",
+    "st4": "Compare",
+    "st4p": "Logistic Regression, Decision Tree, Random Forest and SVM, with balanced class weights.",
+    "f_eyebrow": "What the data showed",
+    "f_h2": "Results on the test set",
+    "t_model": "Model",
+    "t_acc": "Accuracy",
+    "m1": "Logistic Regression",
+    "m2": "Decision Tree",
+    "m4": "SVM (RBF)",
+    "r1a": "78.6%",
+    "r1b": "35.6%",
+    "r1c": "65.6%",
+    "r1d": "46.2%",
+    "r1e": "87.0%",
+    "r2a": "79.9%",
+    "r2b": "39.4%",
+    "r2c": "81.3%",
+    "r2d": "53.1%",
+    "r2e": "82.4%",
+    "r3a": "91.7%",
+    "r3b": "76.0%",
+    "r3c": "59.4%",
+    "r3d": "66.7%",
+    "r3e": "90.4%",
+    "r4a": "81.7%",
+    "r4b": "40.7%",
+    "r4c": "68.8%",
+    "r4d": "51.2%",
+    "r4e": "86.6%",
+    "c1_h3": "Accuracy alone is misleading",
+    "c1_p": "A model that always answered \"not excellent\" would be right 86% of the time without learning anything. That is why the choice relied on precision, recall and F1 for the High class.",
+    "c2_h3": "Find more or make fewer mistakes",
+    "c2_a": "26 of 32",
+    "c2_as": "good wines found by the Decision Tree, with 40 false alarms",
+    "c2_b": "19 of 32",
+    "c2_bs": "found by the Random Forest, with only 6 false alarms",
+    "c2_p": "The Decision Tree finds more good wines but makes many mistakes. The Random Forest is more selective: when it says \"excellent\", it is right 76% of the time.",
+    "c3_h3": "Random Forest was the pick",
+    "c3_num": "90.4%",
+    "c3_p": "ROC-AUC, with the best accuracy, precision and F1 of the four. It is the most balanced model for flagging high-quality wines with confidence.",
+    "l_eyebrow": "What I take from this module",
+    "l_h2": "What I learned",
+    "a1": "Imbalanced data needs other metrics",
+    "a1p": "Precision, recall, F1 and ROC-AUC say more than accuracy when the class of interest is rare.",
+    "a2": "No data leakage",
+    "a2p": "The original score was removed from the inputs, because it was used to build the target.",
+    "a3": "Feature engineering matters",
+    "a3p": "Ratios and interactions between chemical variables improved the models' precision.",
+    "a4": "Reproducibility",
+    "a4p": "Pipelines, a stratified split and a fixed random_state make the results repeatable.",
+    "foot1": "Data: Wine Quality Dataset (Kaggle), 1,143 red wines. Group project at FIAP Pós-Tech.",
+    "foot2": "Code:",
+    "foot3": "Other projects"
+};
+  var PT = {};
+  var nodes = document.querySelectorAll("[data-i18n]");
+  var ariaNodes = document.querySelectorAll("[data-i18n-aria]");
+  nodes.forEach(function (el) { PT[el.getAttribute("data-i18n")] = el.innerHTML; });
+  ariaNodes.forEach(function (el) { PT[el.getAttribute("data-i18n-aria")] = el.getAttribute("aria-label"); });
+
+  function apply(lang) {
+    var dict = lang === "en" ? EN : PT;
+    nodes.forEach(function (el) { var k = el.getAttribute("data-i18n"); if (dict[k] != null) el.innerHTML = dict[k]; });
+    ariaNodes.forEach(function (el) { var k = el.getAttribute("data-i18n-aria"); if (dict[k] != null) el.setAttribute("aria-label", dict[k]); });
+    document.documentElement.lang = lang === "en" ? "en" : "pt-BR";
+    document.querySelectorAll(".lang button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === (lang === "en" ? "en" : "pt-BR")));
+    });
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+  }
+
+  document.querySelectorAll(".lang button").forEach(function (b) {
+    b.addEventListener("click", function () { apply(b.getAttribute("data-lang")); });
+  });
+
+  var start = "pt-BR";
+  if (location.hash === "#en") start = "en";
+  else { try { if (localStorage.getItem("lang") === "en") start = "en"; } catch (e) {} }
+  apply(start);
+})();
+</script>
+</body>
+</html>

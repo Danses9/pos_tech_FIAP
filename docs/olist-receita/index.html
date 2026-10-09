@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Receita Olist</title>
+<meta name="description" content="Análise de receita de ~100 mil pedidos do e-commerce Olist (2016–2018): crescimento, estabilidade e drivers. Tech Challenge Fase 1 da Pós-Tech FIAP.">
+<meta name="author" content="Danna Bigois">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23A5114E'/%3E%3Crect x='7' y='17' width='4' height='8' fill='white'/%3E%3Crect x='14' y='11' width='4' height='14' fill='white'/%3E%3Crect x='21' y='7' width='4' height='18' fill='white'/%3E%3C/svg%3E">
+<meta property="og:type" content="article">
+<meta property="og:title" content="A receita cresceu por volume, não por preço">
+<meta property="og:description" content="Análise de receita de ~100 mil pedidos do e-commerce Olist (2016–2018): crescimento, estabilidade e drivers. Tech Challenge Fase 1 da Pós-Tech FIAP.">
+<meta property="og:url" content="https://danses9.github.io/pos_tech_FIAP/olist-receita/">
+<meta property="og:image" content="https://danses9.github.io/pos_tech_FIAP/olist-receita/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: estudo de caso curto em coluna única; a faixa do pipeline é o elemento central. Cores herdadas da paleta dos gráficos do notebook. */
+:root {
+  --bg: #FAF8F9;
+  --surface: #FFFFFF;
+  --ink: #1B1519;
+  --ink-2: #4D4549;
+  --muted: #7A7176;
+  --line: #E6E0E3;
+  --wine: #A5114E;
+  --wine-soft: #F6E3EB;
+  --plum: #5C2F7C;
+  --plum-soft: #ECE4F3;
+  --slate: #667985;
+  --slate-2: #A9B3B9;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141013; --surface: #1D171B; --ink: #F2ECEF; --ink-2: #CBC1C6; --muted: #978C92; --line: #342B30;
+    --wine: #EC5B8F; --wine-soft: #3A1726; --plum: #B392D6; --plum-soft: #2B2136; --slate: #93A4AE; --slate-2: #5D6A72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141013; --surface: #1D171B; --ink: #F2ECEF; --ink-2: #CBC1C6; --muted: #978C92; --line: #342B30;
+  --wine: #EC5B8F; --wine-soft: #3A1726; --plum: #B392D6; --plum-soft: #2B2136; --slate: #93A4AE; --slate-2: #5D6A72;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 18px; line-height: 1.6;
+  padding-inline: 20px; padding-block: 0 56px;
+}
+.wrap { max-width: 920px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; line-height: 1.15; }
+h3 { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
+p { margin: 0; }
+a { color: var(--wine); text-underline-offset: 3px; }
+a:focus-visible { outline: 2px solid var(--wine); outline-offset: 3px; border-radius: 2px; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--wine); font-weight: 600;
+}
+section { padding-block: 56px 0; display: grid; gap: 24px; }
+.sec-head { display: grid; gap: 10px; }
+.lede { color: var(--ink-2); font-size: 1.08rem; max-width: 60ch; }
+
+/* Hero */
+.hero { padding-block: 28px 0; display: grid; gap: 24px; }
+.hero h1 { font-size: clamp(2.3rem, 6.5vw, 4.2rem); font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.hero h1 em { font-style: normal; color: var(--wine); }
+.stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line);
+}
+.stat { padding: 16px 12px 16px 0; display: grid; gap: 2px; }
+.stat b { font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.stat span { color: var(--muted); font-size: 0.88rem; line-height: 1.3; }
+
+/* Pipeline */
+.pipeline-band { overflow-x: auto; margin-inline: -20px; padding-inline: 20px; padding-bottom: 6px; }
+.pipeline {
+  display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr));
+  min-width: 720px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden;
+}
+.layer { padding: 18px 16px; display: grid; gap: 8px; align-content: start; position: relative; border-right: 1px solid var(--line); }
+.layer:last-child { border-right: 0; }
+.layer::after {
+  content: ""; position: absolute; right: -7px; top: 26px; width: 12px; height: 12px;
+  background: var(--surface); border-top: 1px solid var(--line); border-right: 1px solid var(--line);
+  transform: rotate(45deg); z-index: 1;
+}
+.layer:last-child::after { display: none; }
+.layer h3 { font-size: 1.25rem; }
+.layer p { font-size: 0.92rem; color: var(--ink-2); line-height: 1.4; }
+.layer.curated { background: var(--plum-soft); }
+.serving { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-2); }
+.serving .node { border: 1px solid var(--line); background: var(--surface); padding: 5px 9px; border-radius: 6px; }
+.serving .arrow { color: var(--muted); }
+
+/* Achados */
+.findings { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 20px; display: grid; gap: 12px; align-content: start; min-width: 0;
+}
+.card .num { font-family: var(--font-display); font-weight: 800; font-size: 2.4rem; line-height: 1; color: var(--wine); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.card p { font-size: 0.95rem; color: var(--ink-2); line-height: 1.5; }
+.bars { display: grid; gap: 7px; }
+.bar { display: grid; grid-template-columns: 7rem 1fr 3.2rem; align-items: center; gap: 10px; font-size: 0.85rem; }
+.bar .lbl { color: var(--ink-2); line-height: 1.2; }
+.bar .track { display: block; height: 10px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar .fill { display: block; height: 100%; background: var(--wine); border-radius: 2px; }
+.bar .fill.slate { background: var(--slate); }
+.bar .val { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink); }
+svg text { font-family: var(--font-mono); }
+.chart-svg { width: 100%; height: auto; display: block; }
+
+/* Aprendizados */
+.learn { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 36px; }
+.learn li { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.learn li p { color: var(--ink-2); font-size: 0.96rem; line-height: 1.45; }
+.stack { display: flex; flex-wrap: wrap; gap: 8px; }
+.stack span { font-family: var(--font-mono); font-size: 0.78rem; border: 1px solid var(--line); background: var(--surface); padding: 5px 10px; border-radius: 999px; color: var(--ink-2); }
+
+.lang { display: flex; justify-content: flex-end; gap: 8px; padding-top: 20px; }
+.lang button {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 8px;
+}
+.lang button:hover { border-color: var(--muted); }
+.lang button[aria-pressed="true"] { color: var(--wine); background: var(--wine-soft); border-color: var(--wine); }
+.lang button:focus-visible { outline: 2px solid var(--wine); outline-offset: 2px; }
+.lang svg { width: 20px; height: 14px; border-radius: 2px; display: block; box-shadow: 0 0 0 1px var(--line); }
+
+footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.88rem; display: grid; gap: 6px; }
+
+@media (max-width: 560px) {
+  body { font-size: 17px; padding-inline: 16px; }
+  .pipeline-band { margin-inline: -16px; padding-inline: 16px; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .stat b { font-size: 1.9rem; }
+  .bar { grid-template-columns: 6rem 1fr 3rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fill { transform-origin: left; animation: grow 900ms cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes grow { from { transform: scaleX(0.15); } to { transform: scaleX(1); } }
+}
+</style>
+<style>
+.steps .layer p { font-size: 0.9rem; }
+.table-wrap { overflow-x: auto; }
+table.models { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 520px; }
+table.models th, table.models td { padding: 10px 8px; text-align: right; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+table.models th:first-child, table.models td:first-child { text-align: left; }
+table.models th { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+table.models td { font-family: var(--font-mono); font-size: 0.82rem; color: var(--ink-2); }
+table.models td:first-child { font-family: var(--font-body); font-size: 0.95rem; color: var(--ink); }
+table.models tr.best td { color: var(--wine); font-weight: 600; background: var(--wine-soft); }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.split div { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.split b { font-family: var(--font-display); font-size: 1.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.split span { font-size: 0.82rem; color: var(--ink-2); line-height: 1.35; }
+.split .hl { border-color: var(--wine); }
+.split .hl b { color: var(--wine); }
+</style>
+<style>body { margin: 0; } [hidden] { display: none !important; }</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="lang" aria-label="Idioma / Language">
+    <button type="button" id="lang-pt" data-lang="pt-BR" aria-pressed="true" title="Ler em português">
+      <svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><polygon points="10,1.6 18.4,7 10,12.4 1.6,7" fill="#FFDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8,6.3 Q10,5.3 13.2,7.5" stroke="#FFFFFF" stroke-width="0.7" fill="none"/></svg>
+      PT-BR
+    </button>
+    <button type="button" id="lang-en" data-lang="en" aria-pressed="false" title="Read in English">
+      <svg viewBox="0 0 19 10" preserveAspectRatio="none" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><g fill="#FFFFFF"><rect y="0.769" width="19" height="0.769"/><rect y="2.308" width="19" height="0.769"/><rect y="3.846" width="19" height="0.769"/><rect y="5.385" width="19" height="0.769"/><rect y="6.923" width="19" height="0.769"/><rect y="8.462" width="19" height="0.769"/></g><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg>
+      EN
+    </button>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow" data-i18n="hero_eyebrow">Pós-Tech FIAP · Tech Challenge Fase 1 · Análise de Dados</div>
+    <h1 data-i18n="hero_h1">A receita cresceu por <em>volume</em>, não por preço.</h1>
+    <p class="lede" data-i18n="hero_lede">Analisei cerca de 100 mil pedidos do e-commerce Olist (2016 a 2018) para responder três perguntas de investidor: a receita está crescendo? Esse crescimento é estável? De onde ele vem?</p>
+    <div class="stats">
+      <div class="stat"><b data-i18n="s1_n">99.441</b><span data-i18n="s1">pedidos<br>2016 a 2018</span></div>
+      <div class="stat"><b data-i18n="s2_n">R$ 15,8 mi</b><span data-i18n="s2">de receita<br>(produto + frete)</span></div>
+      <div class="stat"><b data-i18n="s3_n">+139%</b><span data-i18n="s3">receita jan–ago<br>2018 vs. 2017</span></div>
+      <div class="stat"><b data-i18n="s4_n">R$ 160</b><span data-i18n="s4">ticket médio<br>estável</span></div>
+    </div>
+  </header>
+
+  <section id="metodo">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="m_eyebrow">Como foi feito</div>
+      <h2 data-i18n="m_h2">De tabelas soltas a uma série mensal</h2>
+      <p class="lede" data-i18n="m_lede">Python e pandas para juntar as bases, estatística para separar tendência de ruído.</p>
+    </div>
+    <div class="pipeline-band">
+      <div class="pipeline steps" role="list" aria-label="Etapas">
+        <div class="layer" role="listitem"><h3 data-i18n="st1">Juntar</h3><p data-i18n="st1p">Pedidos, itens e clientes ligados por order_id e customer_id.</p></div>
+        <div class="layer" role="listitem"><h3 data-i18n="st2">Calcular</h3><p data-i18n="st2p">Receita por pedido (preço + frete) somada antes do join, para não duplicar.</p></div>
+        <div class="layer" role="listitem"><h3 data-i18n="st3">Resumir</h3><p data-i18n="st3p">Série mensal de pedidos, receita e ticket médio, sem os meses incompletos.</p></div>
+        <div class="layer curated" role="listitem"><h3 data-i18n="st4">Testar</h3><p data-i18n="st4p">Média móvel, volatilidade, correlação e outliers por IQR e z-score.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="achados">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="f_eyebrow">O que os dados mostraram</div>
+      <h2 data-i18n="f_h2">Três achados</h2>
+    </div>
+    <div class="findings">
+
+      <article class="card">
+        <h3 data-i18n="c1_h3">Um novo patamar acima de R$ 1 milhão</h3>
+        <svg class="chart-svg" viewBox="0 0 320 172" role="img" data-i18n-aria="c1_aria" aria-label="Receita mensal de janeiro de 2017 a agosto de 2018: de R$ 137 mil para cerca de R$ 1 milhão por mês, com pico de R$ 1,18 milhão em novembro de 2017">
+          <g stroke="var(--line)" stroke-width="1">
+            <line x1="58" y1="150" x2="300" y2="150"/><line x1="58" y1="106.7" x2="300" y2="106.7"/><line x1="58" y1="63.3" x2="300" y2="63.3"/>
+          </g>
+          <line x1="58" y1="41.7" x2="300" y2="41.7" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>
+          <g font-size="9" fill="var(--muted)" text-anchor="end">
+            <text x="52" y="153">0</text><text x="52" y="109.7" data-i18n="c1_y1">400 mil</text><text x="52" y="66.3" data-i18n="c1_y2">800 mil</text><text x="52" y="44.7" data-i18n="c1_y3">1 mi</text>
+          </g>
+          <polygon points="58,150 58.0,135.2 70.7,119.0 83.5,103.2 96.2,105.4 108.9,86.5 121.7,95.5 134.4,86.6 147.2,77.6 159.9,72.0 172.6,66.7 185.4,22.3 198.1,56.4 210.8,30.1 223.6,43.1 236.3,24.9 249.1,24.3 261.8,25.4 274.5,39.2 287.3,35.3 300.0,41.3 300,150" fill="var(--wine-soft)"/>
+          <polyline fill="none" stroke="var(--wine)" stroke-width="2.4" stroke-linejoin="round" points="58.0,135.2 70.7,119.0 83.5,103.2 96.2,105.4 108.9,86.5 121.7,95.5 134.4,86.6 147.2,77.6 159.9,72.0 172.6,66.7 185.4,22.3 198.1,56.4 210.8,30.1 223.6,43.1 236.3,24.9 249.1,24.3 261.8,25.4 274.5,39.2 287.3,35.3 300.0,41.3"/>
+          <circle cx="185.4" cy="22.3" r="4" fill="var(--wine)"/>
+          <text x="185.4" y="14.3" font-size="9" font-weight="600" fill="var(--wine)" text-anchor="middle" data-i18n="c1_peak">Black Friday · R$ 1,18 mi</text>
+          <g font-size="9" fill="var(--muted)">
+            <text x="58" y="166" data-i18n="c1_x1">jan/17</text><text x="210.8" y="166" text-anchor="middle" data-i18n="c1_x2">jan/18</text><text x="300" y="166" text-anchor="end" data-i18n="c1_x3">ago/18</text>
+          </g>
+        </svg>
+        <p data-i18n="c1_p">Depois do pico de novembro de 2017, a receita não voltou ao nível anterior: 7 dos 8 meses de 2018 passaram de R$ 1 milhão.</p>
+      </article>
+
+      <article class="card">
+        <h3 data-i18n="c2_h3">Quem puxa é o número de pedidos</h3>
+        <div class="split">
+          <div class="hl"><b data-i18n="c2_a">0,996</b><span data-i18n="c2_as">correlação entre pedidos e receita no mês</span></div>
+          <div><b data-i18n="c2_b">R$ 145–172</b><span data-i18n="c2_bs">faixa do ticket médio mensal no período</span></div>
+        </div>
+        <p data-i18n="c2_p">Com o ticket estável, crescer depende de mais pedidos: aquisição, frequência de compra e retenção pesam mais que upsell.</p>
+      </article>
+
+      <article class="card">
+        <h3 data-i18n="c3_h3">73% da receita vem de 5 estados</h3>
+        <div class="bars">
+          <div class="bar"><span class="lbl">SP</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val" data-i18n="v1">37,4%</span></div>
+          <div class="bar"><span class="lbl">RJ</span><span class="track"><span class="fill slate" style="width:35.9%"></span></span><span class="val" data-i18n="v2">13,4%</span></div>
+          <div class="bar"><span class="lbl">MG</span><span class="track"><span class="fill slate" style="width:31.3%"></span></span><span class="val" data-i18n="v3">11,7%</span></div>
+          <div class="bar"><span class="lbl">RS</span><span class="track"><span class="fill slate" style="width:15%"></span></span><span class="val" data-i18n="v4">5,6%</span></div>
+          <div class="bar"><span class="lbl">PR</span><span class="track"><span class="fill slate" style="width:13.5%"></span></span><span class="val" data-i18n="v5">5,1%</span></div>
+        </div>
+        <p data-i18n="c3_p">São Paulo sozinho responde por mais de um terço. Há espaço para crescer fora do Sudeste, e um risco de depender de uma região.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="aprendizados">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="l_eyebrow">O que eu levo deste módulo</div>
+      <h2 data-i18n="l_h2">Meus aprendizados</h2>
+    </div>
+    <ul class="learn">
+      <li><h3 data-i18n="a1">Join sem duplicar receita</h3><p data-i18n="a1p">Agregar os itens por pedido antes de cruzar as tabelas evita somar o mesmo valor duas vezes.</p></li>
+      <li><h3 data-i18n="a2">Mês incompleto engana</h3><p data-i18n="a2p">Setembro e outubro de 2018 tinham poucos pedidos e criavam uma falsa queda no fim da série.</p></li>
+      <li><h3 data-i18n="a3">Pico não é outlier</h3><p data-i18n="a3p">IQR, log e z-score confirmaram que a Black Friday é um evento real do negócio, não um erro.</p></li>
+      <li><h3 data-i18n="a4">Gráfico com recado</h3><p data-i18n="a4p">Cada visualização terminou com um insight, uma conclusão e uma recomendação para investidores.</p></li>
+    </ul>
+    <div class="stack" aria-label="Tecnologias">
+      <span>Python</span><span>pandas</span><span>NumPy</span><span>SciPy</span><span>matplotlib</span><span>seaborn</span><span>Jupyter</span>
+    </div>
+  </section>
+
+  <footer>
+    <p data-i18n="foot1">Dados: Brazilian E-Commerce Public Dataset by Olist (Kaggle). Projeto em grupo na Pós-Tech FIAP; esta página mostra a minha parte, a análise de receita.</p>
+    <p><span data-i18n="foot2">Código:</span> <a href="https://github.com/Danses9/pos_tech_FIAP/tree/main/Tech%20Challenge/Fase%201%20-%20Olist%20Receita" target="_blank" rel="noopener">github.com/Danses9/pos_tech_FIAP</a> · <a href="../" data-i18n="foot3">Outros projetos</a></p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var EN = {
+    "hero_eyebrow": "FIAP Pós-Tech · Tech Challenge Phase 1 · Data Analysis",
+    "hero_h1": "Revenue grew through <em>volume</em>, not price.",
+    "hero_lede": "I analyzed about 100k orders from the Olist e-commerce platform (2016 to 2018) to answer three investor questions: is revenue growing? Is that growth stable? Where does it come from?",
+    "s1_n": "99,441",
+    "s1": "orders<br>2016 to 2018",
+    "s2_n": "R$ 15.8M",
+    "s2": "in revenue<br>(product + shipping)",
+    "s3_n": "+139%",
+    "s3": "Jan–Aug revenue<br>2018 vs. 2017",
+    "s4_n": "R$ 160",
+    "s4": "stable average<br>order value",
+    "m_eyebrow": "How it was built",
+    "m_h2": "From loose tables to a monthly series",
+    "m_lede": "Python and pandas to join the tables, statistics to separate trend from noise.",
+    "st1": "Join",
+    "st1p": "Orders, items and customers linked by order_id and customer_id.",
+    "st2": "Calculate",
+    "st2p": "Revenue per order (price + shipping) summed before the join, so nothing is double counted.",
+    "st3": "Summarize",
+    "st3p": "Monthly series of orders, revenue and average order value, without incomplete months.",
+    "st4": "Test",
+    "st4p": "Moving average, volatility, correlation and outliers via IQR and z-score.",
+    "f_eyebrow": "What the data showed",
+    "f_h2": "Three findings",
+    "c1_h3": "A new level above R$ 1 million",
+    "c1_aria": "Monthly revenue from January 2017 to August 2018: from R$ 137k to about R$ 1M per month, peaking at R$ 1.18M in November 2017",
+    "c1_y1": "400k",
+    "c1_y2": "800k",
+    "c1_y3": "1M",
+    "c1_peak": "Black Friday · R$ 1.18M",
+    "c1_x1": "Jan 17",
+    "c1_x2": "Jan 18",
+    "c1_x3": "Aug 18",
+    "c1_p": "After the November 2017 peak, revenue never went back: 7 of the 8 months of 2018 were above R$ 1 million.",
+    "c2_h3": "Order count is what drives it",
+    "c2_a": "0.996",
+    "c2_as": "correlation between monthly orders and revenue",
+    "c2_b": "R$ 145–172",
+    "c2_bs": "range of the monthly average order value",
+    "c2_p": "With a stable order value, growth depends on more orders: acquisition, purchase frequency and retention matter more than upselling.",
+    "c3_h3": "73% of revenue comes from 5 states",
+    "v1": "37.4%",
+    "v2": "13.4%",
+    "v3": "11.7%",
+    "v4": "5.6%",
+    "v5": "5.1%",
+    "c3_p": "São Paulo alone accounts for more than a third. There is room to grow outside the Southeast, and a risk in depending on one region.",
+    "l_eyebrow": "What I take from this module",
+    "l_h2": "What I learned",
+    "a1": "Joins without double counting",
+    "a1p": "Aggregating items per order before joining the tables avoids adding the same value twice.",
+    "a2": "Incomplete months mislead",
+    "a2p": "September and October 2018 had very few orders and created a fake drop at the end of the series.",
+    "a3": "A peak is not an outlier",
+    "a3p": "IQR, log and z-score confirmed Black Friday is a real business event, not an error.",
+    "a4": "Charts with a message",
+    "a4p": "Each chart ended with an insight, a conclusion and a recommendation for investors.",
+    "foot1": "Data: Brazilian E-Commerce Public Dataset by Olist (Kaggle). Group project at FIAP Pós-Tech; this page shows my part, the revenue analysis.",
+    "foot2": "Code:",
+    "foot3": "Other projects"
+};
+  var PT = {};
+  var nodes = document.querySelectorAll("[data-i18n]");
+  var ariaNodes = document.querySelectorAll("[data-i18n-aria]");
+  nodes.forEach(function (el) { PT[el.getAttribute("data-i18n")] = el.innerHTML; });
+  ariaNodes.forEach(function (el) { PT[el.getAttribute("data-i18n-aria")] = el.getAttribute("aria-label"); });
+
+  function apply(lang) {
+    var dict = lang === "en" ? EN : PT;
+    nodes.forEach(function (el) { var k = el.getAttribute("data-i18n"); if (dict[k] != null) el.innerHTML = dict[k]; });
+    ariaNodes.forEach(function (el) { var k = el.getAttribute("data-i18n-aria"); if (dict[k] != null) el.setAttribute("aria-label", dict[k]); });
+    document.documentElement.lang = lang === "en" ? "en" : "pt-BR";
+    document.querySelectorAll(".lang button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === (lang === "en" ? "en" : "pt-BR")));
+    });
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+  }
+
+  document.querySelectorAll(".lang button").forEach(function (b) {
+    b.addEventListener("click", function () { apply(b.getAttribute("data-lang")); });
+  });
+
+  var start = "pt-BR";
+  if (location.hash === "#en") start = "en";
+  else { try { if (localStorage.getItem("lang") === "en") start = "en"; } catch (e) {} }
+  apply(start);
+})();
+</script>
+</body>
+</html>

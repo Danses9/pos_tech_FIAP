@@ -115,15 +115,15 @@ section { padding-block: 56px 0; display: grid; gap: 24px; }
 .bars { display: grid; gap: 7px; }
 .bar { display: grid; grid-template-columns: 7rem 1fr 3.2rem; align-items: center; gap: 10px; font-size: 0.85rem; }
 .bar .lbl { color: var(--ink-2); line-height: 1.2; }
-.bar .track { height: 10px; background: var(--line); border-radius: 2px; overflow: hidden; }
-.bar .fill { height: 100%; background: var(--wine); border-radius: 2px; }
+.bar .track { display: block; height: 10px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar .fill { display: block; height: 100%; background: var(--wine); border-radius: 2px; }
 .bar .fill.slate { background: var(--slate); }
 .bar .val { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink); }
 svg text { font-family: var(--font-mono); }
 .chart-svg { width: 100%; height: auto; display: block; }
 
 /* Aprendizados */
-.learn { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 36px; }
+.learn { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 36px; }
 .learn li { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
 .learn li p { color: var(--ink-2); font-size: 0.96rem; line-height: 1.45; }
 .stack { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -276,7 +276,7 @@ footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line);
 
   <footer>
     <p data-i18n="foot1">Dados: State of Data Brasil 2023, 2024 e 2025 (Data Hackers + Bain &amp; Company). Projeto em grupo na Pós-Tech FIAP.</p>
-    <p><span data-i18n="foot2">Código:</span> <a href="https://github.com/monicajss/fiap_techchallenge/tree/master/fase-3" target="_blank" rel="noopener">github.com/monicajss/fiap_techchallenge/fase-3</a></p>
+    <p><span data-i18n="foot2">Código:</span> <a href="https://github.com/monicajss/fiap_techchallenge/tree/master/fase-3" target="_blank" rel="noopener">github.com/monicajss/fiap_techchallenge/fase-3</a> · <a href="../" data-i18n="foot3">Outros projetos</a></p>
   </footer>
 
 </div>
@@ -327,7 +327,8 @@ footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line);
     a4: "What the data doesn't say",
     a4p: "Check the response base, and don't mistake the sample for the market or correlation for causation.",
     foot1: "Data: State of Data Brasil 2023, 2024 and 2025 (Data Hackers + Bain &amp; Company). Group project at FIAP Pós-Tech.",
-    foot2: "Code:"
+    foot2: "Code:",
+    foot3: "Other projects"
   };
   var PT = {};
   var nodes = document.querySelectorAll("[data-i18n]");
